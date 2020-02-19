@@ -13,9 +13,9 @@ Pod::Spec.new do |s|
   s.requires_arc        = true
   s.platform            = :ios, "8.0"
   # s.preserve_paths      = "ios/*.framework"
-  s.source_files        = "ios/RTCPjSip/*.{h,m}"
+  s.source_files        = "RTCPjSip/*.{h,m}"
   s.vendored_frameworks = "VialerPJSIP.framework"
   s.dependency 'React'
-  s.dependency 'Vialer-pjsip-iOS'
+  # s.dependency 'Vialer-pjsip-iOS'
   s.xcconfig = {'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) COCOAPODS=1 IOS=1' }
 end
