@@ -116,7 +116,17 @@ export default class Endpoint extends EventEmitter {
             });
         });
     }
-
+    stopServiceAndroid() {
+        if(Platform.OS === 'ios') return;
+        return new Promise( (resolve, reject) => {
+            NativeModules.PjSipModule.stopService((successful, data) => {
+                if(successful) 
+                    resolve(data);
+                else
+                    reject(data); 
+            })
+        })
+    }
     updateStunServers(accountId, stunServerList) {
         return new Promise(function(resolve, reject) {
             NativeModules.PjSipModule.updateStunServers(accountId, stunServerList, (successful, data) => {

@@ -308,6 +308,13 @@ public class PjActions {
 
         return intent;
     }
+
+    public static Intent createStopServiceIntent(int callbackId, Context context) {
+        Intent intent = new Intent(context, PjSipService.class);
+        intent.setAction(PjActions.ACTION_STOP_SERVICE);
+//        intent.putExtra("callback_id", callbackId);
+        return intent;
+    }
     public static Intent createStopServiceIntent(Context context) {
         Intent intent = new Intent(context, PjSipService.class);
         intent.setAction(PjActions.ACTION_STOP_SERVICE);

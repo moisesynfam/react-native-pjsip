@@ -61,6 +61,14 @@ public class PjSipModule extends ReactContextBaseJavaModule implements ActivityE
     }
 
     @ReactMethod
+    public void stopService(Callback callback)  {
+        int id = receiver.register(callback);
+        ReactApplicationContext context = getReactApplicationContext();
+        Intent intent = PjActions.createStopServiceIntent(id,context);
+        context.startService(intent);
+    }
+
+    @ReactMethod
     public void changeServiceConfiguration(ReadableMap configuration, Callback callback) {
         int id = receiver.register(callback);
         Intent intent = PjActions.createSetServiceConfigurationIntent(id, configuration, getReactApplicationContext());
