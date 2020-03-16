@@ -8,6 +8,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -39,11 +40,16 @@ import androidx.core.app.JobIntentService;
 import androidx.core.app.NotificationCompat;
 import androidx.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.telecom.ConnectionService;
+import android.telecom.PhoneAccount;
+import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
 
 import com.carusto.ReactNativePjSip.Custom.PjNotificationsManager;
+import com.carusto.ReactNativePjSip.Custom.PjSipConnectionService;
 import com.carusto.ReactNativePjSip.dto.AccountConfigurationDTO;
 import com.carusto.ReactNativePjSip.dto.CallSettingsDTO;
 import com.carusto.ReactNativePjSip.dto.IncomingCallDTO;
@@ -95,6 +101,8 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private static String TAG = "PjSipService";
 
+    private static PjSipService instance;
+
     private boolean mInitialized;
 
     private boolean mNotificationRunning;
@@ -139,6 +147,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private PowerManager.WakeLock mIncallWakeLock;
 
+    private TelecomManager telecomManager;
     private TelephonyManager mTelephonyManager;
 
     private WifiManager mWifiManager;
@@ -160,10 +169,17 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
     private MediaSessionCompat mMediaSessionCompat;
     private PjNotificationsManager mPjNotificationsManager;
 
-
+    private PhoneAccountHandle mPhoneAccountHandle;
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    public List<PjSipCall> getCalls() {
+        return mCalls;
+    }
+    public static PjSipService getInstance() {
+        return instance;
     }
 
     private void load() {
@@ -290,6 +306,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
             }
 
             mEndpoint.libStart();
+            instance = this;
         } catch (Exception e) {
             Log.e(TAG, "Error while starting PJSIP", e);
         }
@@ -316,6 +333,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
             mWifiLock = mWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, this.getPackageName()+"-wifi-call-lock");
             mWifiLock.setReferenceCounted(false);
             mTelephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+            telecomManager = (TelecomManager) getApplicationContext().getSystemService(Context.TELECOM_SERVICE);
             mGSMIdle = mTelephonyManager.getCallState() == TelephonyManager.CALL_STATE_IDLE;
             IntentFilter phoneStateFilter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
             Log.d(TAG, "Registering PhoneStateChangedReceiver");
@@ -367,7 +385,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     @Override
     public void onDestroy() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && mWorkerThread != null) {
+        if ( mWorkerThread != null) {
 
             mWorkerThread.quitSafely();
         }
@@ -626,50 +644,6 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void createRunningNotification() {
-        try {
-            Log.w(TAG, "Creating notification");
-            Log.w(TAG, mServiceConfiguration.getNotificationsConfig().toString());
-            HashMap<String, Object> notificationConfig = (HashMap) mServiceConfiguration.getNotificationsConfig().get("account");
-            String ns = getApplicationContext().getPackageName();
-            String cls = ns + ".MainActivity";
-            int icon = getResources().getIdentifier(String.valueOf(notificationConfig.get("smallIcon")), "drawable",ns);
-
-            Intent notificationIntent = new Intent(this, Class.forName(cls));
-            PendingIntent openAppPendingIntent = PendingIntent.getActivity(this, 0,
-                    notificationIntent, 0);
-
-            Intent stopServiceIntent = PjActions.createStopServiceIntent(this);
-            PendingIntent stopServicePendingIntent = PendingIntent.getService(this, 0, stopServiceIntent, 0);
-
-            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "")
-                    .setContentTitle(String.valueOf(notificationConfig.get("title")))
-                    .setContentText(String.valueOf(notificationConfig.get("text")))
-                    .setTicker(String.valueOf(notificationConfig.get("ticker")))
-                    .setSmallIcon(icon != 0 ? icon : R.drawable.redbox_top_border_background)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .addAction(0, "Stop", stopServicePendingIntent)
-                    .setContentIntent(openAppPendingIntent);
-
-
-
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
-                NotificationChannel notificationChannel = new NotificationChannel("pjsip.service", "Service Running", NotificationManager.IMPORTANCE_DEFAULT);
-                notificationChannel.setShowBadge(false);
-                NotificationManager notificationManager = getSystemService(NotificationManager.class);
-                notificationManager.createNotificationChannel(notificationChannel);
-                notificationBuilder.setChannelId(notificationChannel.getId());
-            }
-            mNotificationRunning = true;
-
-            startForeground(9999, notificationBuilder.build());
-
-        } catch (Exception e) {
-            Log.w(TAG, "Error starting foreground notification", e);
-        }
-    }
 
     private void handleSetServiceConfiguration(Intent intent) {
         try {
@@ -812,11 +786,26 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         mTrash.add(cfg);
         mTrash.add(cred);
 
-        mAccounts.add(account);
+        registerPhoneAccount(account);
 
+        mAccounts.add(account);
+        registerPhoneAccount(account);
         return account;
     }
+    private void registerPhoneAccount(PjSipAccount account) {
+        Log.d(TAG, "registerPhoneAccount: ");
+        ComponentName componentName = new ComponentName(this, PjSipConnectionService.class);
+        Log.d(TAG, " registerPhoneAccount Component: " + componentName.flattenToString());
+        mPhoneAccountHandle = new PhoneAccountHandle(componentName, account.getConfiguration().username);
+        PhoneAccount.Builder accountBuilder = new PhoneAccount.Builder(mPhoneAccountHandle,  account.getConfiguration().username);
+        if(android.os.Build.VERSION.SDK_INT >= 26) {
+            accountBuilder.setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED);
+        } else {
+            accountBuilder.setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER);
+        }
 
+        telecomManager.registerPhoneAccount(accountBuilder.build());
+    }
     private void handleAccountDelete(Intent intent) {
         try {
             int accountId = intent.getIntExtra("account_id", -1);
@@ -842,6 +831,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         }
     }
 
+    @SuppressLint("MissingPermission")
     private void handleCallMake(Intent intent) {
         try {
             int accountId = intent.getIntExtra("account_id", -1);
@@ -905,7 +895,18 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
             // Automatically put other calls on hold.
 //            doPauseParallelCalls(call);
 
+            Uri callUri = Uri.parse(destination);
+            Bundle callData = new Bundle();
+            Log.d(TAG, "Call uri: " + callUri.toString());
+            callData.putInt("call_id", call.getId());
+            callData.putString("call_data", call.toJsonString());
+
+            callData.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, mPhoneAccountHandle);
+
+            Log.d(TAG, "adding pre call with id: " + call.getId());
             mCalls.add(call);
+            telecomManager.placeCall(callUri, callData);
+
 
             mEmitter.fireIntentHandled(intent, call.toJson());
         } catch (Exception e) {
@@ -953,6 +954,8 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
             call.answer(prm);
             mPjNotificationsManager.stopIncomingCallNotification(callId);
             // Automatically put other calls on hold.
+            Log.d(TAG, "handleCallAnswer: dopauseparallel calls");
+
             doPauseParallelCalls(call);
 
             mEmitter.fireIntentHandled(intent);
@@ -963,6 +966,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private void handleCallSetOnHold(Intent intent) {
         try {
+            Log.d(TAG, "Looking for hold");
             int callId = intent.getIntExtra("call_id", -1);
 
             // -----
@@ -984,6 +988,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
             call.unhold();
 
             // Automatically put other calls on hold.
+            Log.d(TAG, "Looking for hold handle call release ");
             doPauseParallelCalls(call);
 
             mEmitter.fireIntentHandled(intent);
@@ -1114,6 +1119,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private void handleDeactivateAudioSession(Intent intent) {
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
+            Log.d(TAG, "Releasing audio focus");
             mAudioManager.abandonAudioFocusRequest(callAudioFocusRequest);
         } else {
             mAudioManager.abandonAudioFocus(this);
@@ -1297,6 +1303,12 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     void emmitCallReceived(PjSipAccount account, PjSipCall call) {
         // Automatically decline incoming call when user uses GSM
+        Bundle extras = new Bundle();
+        extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, mPhoneAccountHandle);
+        extras.putInt("call_id", call.getId());
+        extras.putString("call_data", call.toJsonString());
+        telecomManager.addNewIncomingCall(mPhoneAccountHandle, extras);
+        Log.d(TAG, "Adding Incoming call");
         if (!mGSMIdle) {
             try {
                 call.hangup(new CallOpParam(true));
@@ -1622,7 +1634,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
                 job(new Runnable() {
                     @Override
                     public void run() {
-                        doPauseAllCalls();
+//                        doPauseAllCalls();
                     }
                 });
             } else if (TelephonyManager.EXTRA_STATE_IDLE.equals(extraState)) {

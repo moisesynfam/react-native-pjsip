@@ -44,9 +44,9 @@ public  class BluetoothBroadcastReceiver extends BroadcastReceiver implements Bl
         IntentFilter filter2 = new IntentFilter();
         filter.addAction(BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT);
         filter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
-//        filter.addAction( Intent.ACTION_CALL_BUTTON);
-//        filter.addAction( Intent.ACTION_VOICE_COMMAND);
-//        filter.addAction( Intent.ACTION_MEDIA_BUTTON);
+        filter.addAction( Intent.ACTION_CALL_BUTTON);
+        filter.addAction( Intent.ACTION_VOICE_COMMAND);
+        filter.addAction( Intent.ACTION_MEDIA_BUTTON);
 //
         filter.setPriority(Integer.MAX_VALUE);
         filter.addCategory(BluetoothHeadset.VENDOR_SPECIFIC_HEADSET_EVENT_COMPANY_ID_CATEGORY + "." + 55);
