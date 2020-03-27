@@ -19,6 +19,8 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import javax.annotation.Nullable;
 
+import static android.content.Context.AUDIO_SERVICE;
+
 @SuppressLint("MissingPermission")
 public  class BluetoothBroadcastReceiver extends BroadcastReceiver implements BluetoothProfile.ServiceListener {
 
@@ -27,7 +29,7 @@ public  class BluetoothBroadcastReceiver extends BroadcastReceiver implements Bl
     private BluetoothDevice btHeadsetDevice;
     private BluetoothAdapter mAdapter;
     private ReactContext context;
-
+    private AudioManager mAudioManager;
     public BluetoothBroadcastReceiver() {}
 
     public void setContext(ReactContext context) {
@@ -36,7 +38,7 @@ public  class BluetoothBroadcastReceiver extends BroadcastReceiver implements Bl
     public BluetoothBroadcastReceiver(ReactContext context) {
         this.context = context;
         IntentFilter filter = new IntentFilter();
-
+        mAudioManager = (AudioManager) context.getSystemService(AUDIO_SERVICE);
 
         filter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
 
@@ -52,7 +54,7 @@ public  class BluetoothBroadcastReceiver extends BroadcastReceiver implements Bl
         filter.addCategory(BluetoothHeadset.VENDOR_SPECIFIC_HEADSET_EVENT_COMPANY_ID_CATEGORY + "." + 55);
         mAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        AudioManager mAudioManager =  (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager mAudioManager =  (AudioManager) context.getSystemService(AUDIO_SERVICE);
         ComponentName mReceiverComponent = new ComponentName(context,BluetoothBroadcastReceiver.class);
 
         mAudioManager.registerMediaButtonEventReceiver(mReceiverComponent);
@@ -79,6 +81,11 @@ public  class BluetoothBroadcastReceiver extends BroadcastReceiver implements Bl
         if(action != null && action.isEmpty()) return;
 
         Log.d(TAG, "New Intent received: " +action);
+        Bundle bundle = intent.getExtras();
+        for (String key : bundle.keySet())
+        {
+            Log.d(TAG, key + " = \"" + bundle.get(key) + "\"");
+        }
         if(action.equals(BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT)) {
             Log.d(TAG, BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT + ": " + intent.getExtras());
             switch (intent.getIntExtra(BluetoothHeadset.EXTRA_VENDOR_SPECIFIC_HEADSET_EVENT_CMD_TYPE, -1000)) {

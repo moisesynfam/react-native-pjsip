@@ -81,14 +81,33 @@ public class PjSipConnectionService extends ConnectionService {
     @Override
     public Connection onCreateIncomingConnection(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request) {
         Log.d(TAG, "Creating incoming connection");
-        Bundle callData = request.getExtras();
-        PjSipConnection connection = new PjSipConnection(this, callData.getInt("call_id"));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            connection.setConnectionProperties(Connection.PROPERTY_SELF_MANAGED);
+        int callId = request.getExtras().getInt("call_id");
+        String callDataJsonString = request.getExtras().getString("call_data");
+        JSONObject callData = null;
+        PjSipConnection connection = new PjSipConnection(this, callId );
+        try{
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                connection.setConnectionProperties(Connection.PROPERTY_SELF_MANAGED);
+            }
+            callData = new JSONObject(callDataJsonString);
+            String remoteUri = callData.getString("remoteUri");
+            String number = remoteUri.substring(remoteUri.indexOf("<sip:") + 5, remoteUri.indexOf("@"));
+            String name = remoteUri.split("\"").length > 1 ? remoteUri.split("\"")[1] : null;
+            if(name != null)
+                connection.setCallerDisplayName(name, TelecomManager.PRESENTATION_ALLOWED);
+//        connection.setAddress(Uri.parse("sip:104@sip01.dialpath.com"), TelecomManager.PRESENTATION_ALLOWED);
+
+//            Log.d(TAG, "uri:" + Uri.parse(callData.getString("remoteUri")));
+            connection.setAddress(Uri.fromParts("sip:", number, null), TelecomManager.PRESENTATION_ALLOWED);
+
+        } catch (JSONException e) {
+            Log.w(TAG, "Error getting json object", e);
+        } finally {
+
+
+            currentConnections.put(callId, connection);
         }
-        connection.setCallerDisplayName("Juan", TelecomManager.PRESENTATION_ALLOWED);
-        connection.setAddress(Uri.parse("sip:104@sip01.dialpath.com"), TelecomManager.PRESENTATION_ALLOWED);
-        currentConnections.put(callData.getInt("call_id"), connection);
         return connection;
 
     }

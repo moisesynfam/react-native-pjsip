@@ -40,8 +40,10 @@ public class PjNotificationsManager {
     private NotificationManager manager;
     private Vibrator mVibrator;
     private final String SERVICE_CHANNEL_ID = "pjsip:service-channel-id";
+
     private final String INCOMING_CALL_CHANNEL_ID = "pjsip:incoming-call-channel-id";
 
+    private String channelVersion = "-version-1";
 
     public  PjNotificationsManager (Service pjsipService) {
         this.pjsipService = pjsipService;
@@ -78,7 +80,6 @@ public class PjNotificationsManager {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
 
 
-
             NotificationChannel ongoingServiceChannel = new NotificationChannel(SERVICE_CHANNEL_ID, "SIP Service",
                     NotificationManager.IMPORTANCE_DEFAULT);
             ongoingServiceChannel.setSound(null, null);
@@ -86,9 +87,9 @@ public class PjNotificationsManager {
             ongoingServiceChannel.enableLights(true);
 
             manager.createNotificationChannel(ongoingServiceChannel);
-
+            manager.deleteNotificationChannel(INCOMING_CALL_CHANNEL_ID);
 //            manager.deleteNotificationChannel(INCOMING_CALL_CHANNEL_ID);
-            NotificationChannel incomingCallChannel = new NotificationChannel(INCOMING_CALL_CHANNEL_ID, "Incoming Calls",
+            NotificationChannel incomingCallChannel = new NotificationChannel(INCOMING_CALL_CHANNEL_ID + channelVersion, "Incoming Calls",
                     NotificationManager.IMPORTANCE_HIGH);
             // other channel setup stuff goes here.
 
@@ -104,7 +105,8 @@ public class PjNotificationsManager {
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build());
             incomingCallChannel.setVibrationPattern(null);
-            incomingCallChannel.setSound(null, null);
+//            incomingCallChannel.setSound(null, null);
+
             manager.createNotificationChannel(incomingCallChannel);
         }
 
@@ -234,7 +236,7 @@ public class PjNotificationsManager {
             }
             // Use builder.addAction(..) to add buttons to answer or reject the call.
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                builder.setChannelId(INCOMING_CALL_CHANNEL_ID);
+                builder.setChannelId(INCOMING_CALL_CHANNEL_ID + channelVersion);
             }
 
             Notification notification = builder.build();

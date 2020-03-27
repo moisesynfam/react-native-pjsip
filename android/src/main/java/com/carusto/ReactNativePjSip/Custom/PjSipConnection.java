@@ -4,10 +4,12 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.carusto.ReactNativePjSip.PjActions;
 import com.carusto.ReactNativePjSip.PjSipBroadcastEmiter;
@@ -36,7 +38,7 @@ public class PjSipConnection extends Connection {
     @Override
     public void onShowIncomingCallUi() {
         Log.d(TAG, "onShowIncomingCallUi");
-        setActive();
+//        setActive();
     }
 
     @Override
@@ -65,5 +67,12 @@ public class PjSipConnection extends Connection {
     public void onReject() {
         Log.d(TAG, "onReject");
         emitter.fireCallDeclinedEvent(callId);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public void onCallAudioStateChanged(CallAudioState state) {
+        Log.d(TAG, "onCallAudioStateChanged " + state.toString());
+        setAudioRoute(state.getRoute());
     }
 }
