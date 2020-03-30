@@ -63,13 +63,18 @@ public class PjSipConnectionService extends ConnectionService {
 
 //        for (String key: callData.keySet())
 //        {
-//            Log.d ("myApplication", key + " is a key in the bundle");
+//            Log.d (TAG, key + " is a key in the bundle");
 //        }
         List<PjSipCall> currentCalls = PjSipService.getInstance().getCalls();
+        PjSipCall currentCall = currentCalls.get(currentCalls.size() - 1);
+        Integer callId = currentCall.getId();
+        PjSipConnection connection = null;
 
-        Integer callId = currentCalls.get(currentCalls.size() - 1).getId();
-        PjSipConnection connection = new PjSipConnection(this, callId);
+            connection = new PjSipConnection(this, callId);
+//            connection = new PjSipConnection(this, callId, currentCall.toJson().getString("audioRoute"));
 
+
+        connection.setActive();
         Log.d(TAG, "Adding connection with id: " + callId);
         currentConnections.put(callId, connection);
 //        connection.setConnectionProperties();
@@ -83,14 +88,16 @@ public class PjSipConnectionService extends ConnectionService {
         Log.d(TAG, "Creating incoming connection");
         int callId = request.getExtras().getInt("call_id");
         String callDataJsonString = request.getExtras().getString("call_data");
-        JSONObject callData = null;
-        PjSipConnection connection = new PjSipConnection(this, callId );
-        try{
 
+        PjSipConnection connection = null;
+        try{
+            JSONObject callData = new JSONObject(callDataJsonString);;
+//            connection  = new PjSipConnection(this, callId, callData.getString("audioRoute") );
+            connection  = new PjSipConnection(this, callId );
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
                 connection.setConnectionProperties(Connection.PROPERTY_SELF_MANAGED);
             }
-            callData = new JSONObject(callDataJsonString);
+
             String remoteUri = callData.getString("remoteUri");
             String number = remoteUri.substring(remoteUri.indexOf("<sip:") + 5, remoteUri.indexOf("@"));
             String name = remoteUri.split("\"").length > 1 ? remoteUri.split("\"")[1] : null;
@@ -144,6 +151,7 @@ public class PjSipConnectionService extends ConnectionService {
             filter.addAction(PjActions.EVENT_IN_CALL);
             filter.addAction(PjActions.EVENT_CALL_CHANGED);
             filter.addAction(PjActions.EVENT_CALL_TERMINATED);
+            filter.addAction(PjActions.EVENT_AUDIO_ROUTE_CHANGED);
 
             Log.d(TAG, "Adding new event filters" );
 
@@ -165,7 +173,7 @@ public class PjSipConnectionService extends ConnectionService {
                         String json = intent.getStringExtra("data");
                         JSONObject object = new JSONObject(json);
                         if(object.getString("state").equals(pjsip_inv_state.PJSIP_INV_STATE_CALLING)){
-                            currentConnections.get(object.getInt("id")).setActive();
+//                            currentConnections.get(object.getInt("id")).setActive();
                         }
 
                     } catch (JSONException e) {
@@ -195,7 +203,14 @@ public class PjSipConnectionService extends ConnectionService {
                         Log.w(TAG, "Error getting current connection.", e);
                     }
                     break;
+                case PjActions.EVENT_AUDIO_ROUTE_CHANGED:
 
+                    String route = intent.getStringExtra("route");
+                    Log.d(TAG, "Changing connections audio route to: " + route);
+                    for(Integer key : currentConnections.keySet() ) {
+                        currentConnections.get(key).setCallConnectionAudioRoute(route);
+                    }
+                    break;
                 default:
                     break;
             }

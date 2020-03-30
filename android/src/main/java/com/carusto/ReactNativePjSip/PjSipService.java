@@ -1027,6 +1027,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private void handleCallUseSpeaker(Intent intent) {
         try {
+            mEmitter.fireAudioRouteChangedEvent("speaker");
             mAudioManager.setSpeakerphoneOn(true);
             mUseSpeaker = true;
 
@@ -1048,6 +1049,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private void handleCallUseBtHeadset(Intent intent) {
         try {
+            mEmitter.fireAudioRouteChangedEvent("bluetooth");
             if(!mUseBtHeadset) {
                 mAudioManager.setBluetoothScoOn(true);
                 mAudioManager.startBluetoothSco();
@@ -1063,6 +1065,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private void handleCallUseEarpiece(Intent intent) {
         try {
+            mEmitter.fireAudioRouteChangedEvent("earpiece");
             mAudioManager.setSpeakerphoneOn(false);
             mUseSpeaker = false;
 
@@ -1075,6 +1078,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
             for (PjSipCall call : mCalls) {
                 emmitCallUpdated(call);
             }
+
 
             mEmitter.fireIntentHandled(intent);
         } catch (Exception e) {

@@ -55,6 +55,7 @@ public class PjActions {
 
     public static final String EVENT_STARTED = "com.carusto.account.started";
     public static final String EVENT_SERVICE_STOPPED = "com.carusto.service.stopped";
+    public static final String EVENT_AUDIO_ROUTE_CHANGED = "com.carusto.audio.route.changed";
     public static final String EVENT_ACCOUNT_CREATED = "com.carusto.account.created";
     public static final String EVENT_REGISTRATION_CHANGED = "com.carusto.registration.changed";
     public static final String EVENT_CALL_CHANGED = "com.carusto.call.changed";

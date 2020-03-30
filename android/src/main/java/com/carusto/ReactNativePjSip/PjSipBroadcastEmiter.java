@@ -156,5 +156,12 @@ public class PjSipBroadcastEmiter {
         context.sendBroadcast(intent);
     }
 
+    public void fireAudioRouteChangedEvent(String route){
+        Intent intent = new Intent();
+        intent.setAction(PjActions.EVENT_AUDIO_ROUTE_CHANGED);
+        intent.putExtra("route", route);
+        context.sendBroadcast(intent);
+    }
+
 
 }

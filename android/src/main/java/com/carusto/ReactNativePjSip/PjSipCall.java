@@ -224,9 +224,16 @@ public class PjSipCall extends Call {
         try {
             CallInfo info = getInfo();
 
+
             // -----
             AudioManager audioManager = (AudioManager) getService().getBaseContext().getSystemService(Context.AUDIO_SERVICE);
             boolean speaker = audioManager.isSpeakerphoneOn();
+            String audioRoute = "earpiece";
+            if(audioManager.isBluetoothScoOn()){
+                audioRoute = "bluetooth";
+            } else if (audioManager.isSpeakerphoneOn()) {
+                audioRoute = "speaker";
+            }
 
             // -----
             int connectDuration = -1;
@@ -255,6 +262,7 @@ public class PjSipCall extends Call {
             json.put("held", isHeld);
             json.put("muted", isMuted);
             json.put("speaker", speaker);
+            json.put("audioRoute", audioRoute);
 
             try {
                 json.put("lastStatusCode", info.getLastStatusCode());
