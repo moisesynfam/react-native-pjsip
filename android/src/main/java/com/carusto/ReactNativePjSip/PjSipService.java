@@ -93,6 +93,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
     private List<PjSipAccount> mAccounts = new ArrayList<>();
 
     private List<PjSipCall> mCalls = new ArrayList<>();
+    private List<PjSipCall> mHungUpCalls = new ArrayList<>();
 
     // In order to ensure that GC will not destroy objects that are used in PJSIP
     // Also there is limitation of pjsip that thread should be registered first before working with library
@@ -918,7 +920,14 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         try {
             int callId = intent.getIntExtra("call_id", -1);
             PjSipCall call = findCall(callId);
-            call.hangup(new CallOpParam(true));
+            CallOpParam param = new CallOpParam(true);
+            call.hangup(param);
+            mHungUpCalls.add(call);
+            emmitCallTerminated(call, null);
+
+            if( ringbackPlayer.isPlaying()) {
+                ringBack(false);
+            }
 
             mEmitter.fireIntentHandled(intent);
         } catch (Exception e) {
@@ -1293,6 +1302,22 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         throw new Exception("Call with specified \""+ id +"\" id not found");
     }
 
+    private boolean shouldEmmitTerminatedCall( PjSipCall call) {
+        boolean shouldEmmit = true;
+        int i = 0;
+        for(Iterator<PjSipCall> iterator = mHungUpCalls.iterator(); iterator.hasNext();) {
+            PjSipCall pjSipCall = iterator.next();
+            if(pjSipCall.getId() == call.getId()) {
+                iterator.remove();
+                shouldEmmit = false;
+                break;
+            }
+
+        }
+
+        return shouldEmmit;
+    }
+
     void emmitRegistrationChanged(PjSipAccount account, OnRegStateParam prm) {
         getEmitter().fireRegistrationChangeEvent(account);
     }
@@ -1407,7 +1432,8 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
             }
             if (call.getInfo().getState() == pjsip_inv_state.PJSIP_INV_STATE_DISCONNECTED) {
-                emmitCallTerminated(call, prm);
+                if(shouldEmmitTerminatedCall(call))
+                    emmitCallTerminated(call, prm);
             } else {
                 emmitCallChanged(call, prm);
             }
