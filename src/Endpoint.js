@@ -78,7 +78,7 @@ export default class Endpoint extends EventEmitter {
      * @returns {Promise}
      */
     start(configuration) {
-        console.log({configuration})
+        //console.log({configuration})
         return new Promise(function(resolve, reject) {
             NativeModules.PjSipModule.start(configuration, (successful, data) => {
                 if (successful) {

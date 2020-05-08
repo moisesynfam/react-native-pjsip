@@ -9,7 +9,7 @@ export default class Call {
             state, stateText, held, muted, speaker,
             connectDuration, totalDuration,
             remoteOfferer, remoteAudioCount, remoteVideoCount, audioCount, videoCount,
-            lastStatusCode, lastReason, media, provisionalMedia
+            lastStatusCode, lastReason, media, provisionalMedia, audioRoute
         }) {
         let remoteNumber = null;
         let remoteName = null;
@@ -41,6 +41,7 @@ export default class Call {
         this._held = held;
         this._muted = muted;
         this._speaker = speaker;
+        this._audioRoute = audioRoute;
         this._connectDuration = connectDuration;
         this._totalDuration = totalDuration;
         this._remoteOfferer = remoteOfferer;
@@ -236,6 +237,10 @@ export default class Call {
 
     isSpeaker() {
         return this._speaker;
+    }
+
+    getAudioRoute() {
+        return this._audioRoute;
     }
 
     isTerminated() {
