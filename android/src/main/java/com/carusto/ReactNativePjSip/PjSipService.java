@@ -449,6 +449,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
     }
 
     public void evict(final PjSipCall call) {
+        Log.d(TAG, "Evicting call: " + call.getId());
         if (mHandler.getLooper().getThread() != Thread.currentThread()) {
             job(new Runnable() {
                 @Override
@@ -460,7 +461,12 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         }
 
         mCalls.remove(call);
-        call.delete();
+        try{
+            call.delete();
+        }catch (Exception e) {
+            Log.w(TAG, "Error trying to delete call", e);
+        }
+
     }
 
 
@@ -919,6 +925,7 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
     private void handleCallHangup(Intent intent) {
         try {
             int callId = intent.getIntExtra("call_id", -1);
+            Log.d(TAG, "handleCallHangup: " + callId);
             PjSipCall call = findCall(callId);
             CallOpParam param = new CallOpParam(true);
             call.hangup(param);
@@ -1330,8 +1337,24 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
         mEmitter.fireInCallEvent(call);
     }
 
+    boolean doesCallExists(PjSipCall call) {
+
+        for(int i = 0; i < mCalls.size(); i++) {
+            try {
+               boolean exist = mCalls.get(i).getInfo().getCallIdString().equals(call.getInfo().getCallIdString());
+                if(exist) {
+                    Log.d(TAG, "Call with id: " + call.getId() + " already exists" );
+                    return  true;
+                }
+            } catch (Exception e) {
+               Log.w(TAG, "Error finding call", e);
+            }
+        }
+        return false;
+    }
     void emmitCallReceived(PjSipAccount account, PjSipCall call) {
         // Automatically decline incoming call when user uses GSM
+
         Bundle extras = new Bundle();
         extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, mPhoneAccountHandle);
         extras.putInt("call_id", call.getId());
@@ -1484,6 +1507,8 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     void emmitCallTerminated(PjSipCall call, OnCallStateParam prm) {
         final int callId = call.getId();
+        Log.d(TAG, "Call terminated: " + callId);
+        mPjNotificationsManager.stopOutgoingNotification(callId);
         Log.d(TAG, "ring emmitCallTerminated: " + mCalls.size());
         mPjNotificationsManager.stopIncomingCallNotification(call.getId());
         job(new Runnable() {

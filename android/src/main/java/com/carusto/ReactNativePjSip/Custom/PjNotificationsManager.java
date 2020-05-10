@@ -243,6 +243,7 @@ public class PjNotificationsManager {
             notification.sound = ringtoneUri;
 
             shouldVibrate(callsCount <= 1);
+            Log.d(TAG, "Sending notification for call: " + callData.getCallId());
             manager.notify("incoming_calls", callData.getCallId()+100, notification);
 
         } catch (Exception e) {
@@ -276,6 +277,9 @@ public class PjNotificationsManager {
         shouldVibrate(false);
     }
 
+    public void stopOutgoingNotification (int id) {
+        manager.cancel("ongoing_calls", id+100);
+    }
     @TargetApi(Build.VERSION_CODES.N)
     private Notification.Action getAnswerAction(int callId) {
         String ns = mContext.getApplicationContext().getPackageName();
