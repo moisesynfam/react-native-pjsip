@@ -1071,6 +1071,11 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
                 mAudioManager.startBluetoothSco();
                 mUseBtHeadset = true;
                 mEmitter.fireIntentHandled(intent);
+
+                for (PjSipCall call : mCalls) {
+                    emmitCallUpdated(call);
+                }
+
             }
 
         } catch (Exception e) {
@@ -1148,7 +1153,9 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
 
     private void handleStartIncomingCall(Intent intent) {
        try{
-            mPjNotificationsManager.sendIncomingCallNotification(IncomingCallDTO.fromBundle(intent.getExtras()), mCalls.size() );
+
+           mPjNotificationsManager.sendIncomingCallNotification(IncomingCallDTO.fromBundle(intent.getExtras()), mCalls.size() );
+
             mEmitter.fireIntentHandled(intent);
        } catch (Exception e) {
             mEmitter.fireIntentHandled(intent, e);
@@ -1354,7 +1361,8 @@ public class PjSipService extends Service implements AudioManager.OnAudioFocusCh
     }
     void emmitCallReceived(PjSipAccount account, PjSipCall call) {
         // Automatically decline incoming call when user uses GSM
-
+        Log.d(TAG, "New Call received " + call.getId());
+        Log.d(TAG, call.toJsonString());
         Bundle extras = new Bundle();
         extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, mPhoneAccountHandle);
         extras.putInt("call_id", call.getId());

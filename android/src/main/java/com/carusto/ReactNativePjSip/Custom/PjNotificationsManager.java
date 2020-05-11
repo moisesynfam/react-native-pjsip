@@ -209,7 +209,7 @@ public class PjNotificationsManager {
             }
 
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
-                int callId = callData.getCallId();
+                int callId = callData.getId();
                 Log.d(TAG, "call id received" + callId);
                 builder.addAction(getAnswerAction(callId));
                 builder.addAction(getDeclineAction(callId));
@@ -217,7 +217,7 @@ public class PjNotificationsManager {
             } else {
                 Intent answerIntent = new Intent(mContext, getActivityClass());
                 answerIntent.setAction(NotificationActionsReceiver.Actions.ANSWER_CALL);
-                answerIntent.putExtra("call_id", callData.getCallId());
+                answerIntent.putExtra("call_id", callData.getId());
 
                 PendingIntent answerPendingIntent =
                         PendingIntent.getActivity(
@@ -225,11 +225,11 @@ public class PjNotificationsManager {
 
                 Intent declineIntent = new Intent(mContext, NotificationActionsReceiver.class);
                 declineIntent.setAction(NotificationActionsReceiver.Actions.DECLINE_CALL);
-                declineIntent.putExtra("call_id", callData.getCallId());
+                declineIntent.putExtra("call_id", callData.getId());
 
                 PendingIntent declinePendingIntent =
                         PendingIntent.getBroadcast(
-                                mContext, callData.getCallId(), declineIntent, 0);
+                                mContext, callData.getId(), declineIntent, 0);
 
                 builder.addAction(0, "Answer", answerPendingIntent);
                 builder.addAction(0, "Decline", declinePendingIntent);
@@ -244,7 +244,7 @@ public class PjNotificationsManager {
 
             shouldVibrate(callsCount <= 1);
             Log.d(TAG, "Sending notification for call: " + callData.getCallId());
-            manager.notify("incoming_calls", callData.getCallId()+100, notification);
+            manager.notify("incoming_calls", callData.getId()+100, notification);
 
         } catch (Exception e) {
             Log.e(TAG, "Error sending incoming call notification", e);

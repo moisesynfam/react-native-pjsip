@@ -12,17 +12,18 @@ import java.util.Map;
 
 public class IncomingCallDTO {
 
-    private int callId;
+    private int id;
     private String contactName;
     private String contactNumber;
-    private String callUUID;
+    private String callId;
+    private String callData;
 
-    public int getCallId() {
-        return callId;
+    public int getId() {
+        return id;
     }
 
-    public void setCallId(int callId) {
-        this.callId = callId;
+    public void setId(int callId) {
+        this.id = callId;
     }
 
     public String getContactName() {
@@ -41,12 +42,12 @@ public class IncomingCallDTO {
         this.contactNumber = contactNumber;
     }
 
-    public String getCallUUID() {
-        return callUUID;
+    public String getCallId() {
+        return callId;
     }
 
-    public void setCallUUID(String callUUID) {
-        this.callUUID = callUUID;
+    public void setCallId(String callUUID) {
+        this.callId = callUUID;
     }
 
     public String toJson () {
@@ -63,7 +64,7 @@ public class IncomingCallDTO {
         IncomingCallDTO result = new IncomingCallDTO();
 
         if (data.hasKey("callId")) {
-            result.setCallId(data.getInt("targetURI"));
+            result.setId(data.getInt("targetURI"));
         }
 
         if (data.hasKey("contactName")) {
@@ -74,7 +75,7 @@ public class IncomingCallDTO {
         }
 
         if (data.hasKey("callUUID")) {
-            result.setCallUUID(data.getString("callUUID"));
+            result.setCallId(data.getString("callUUID"));
         }
         return result;
     }
@@ -84,8 +85,8 @@ public class IncomingCallDTO {
 
         Log.d("NotificationCall", "creating call from bundle" + data);
         if(data == null) return result;
-        if (data.containsKey("callId")) {
-            result.setCallId(data.getInt("callId"));
+        if (data.containsKey("id")) {
+            result.setId(data.getInt("id"));
         }
 
         if (data.containsKey("contactName")) {
@@ -95,10 +96,21 @@ public class IncomingCallDTO {
             result.setContactNumber(data.getString("contactNumber"));
         }
 
-        if (data.containsKey("callUUID")) {
-            result.setCallUUID(data.getString("callUUID"));
+        if (data.containsKey("callId")) {
+            result.setCallId(data.getString("callId"));
+        }
+
+        if (data.containsKey("callData")) {
+            result.setCallData(data.getString("callData"));
         }
         return result;
     }
 
+    public String getCallData() {
+        return callData;
+    }
+
+    public void setCallData(String callData) {
+        this.callData = callData;
+    }
 }
