@@ -1,3 +1,5 @@
+@import AVFoundation;
+
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
 
@@ -161,9 +163,10 @@
 #pragma mark - Extra
 
 - (NSDictionary *)toJsonDictionary:(bool) isSpeaker {
+  
     pjsua_call_info info;
     pjsua_call_get_info(self.id, &info);
-
+    
     // -----
     int connectDuration = -1;
     
@@ -171,12 +174,22 @@
         info.state == PJSIP_INV_STATE_DISCONNECTED) {
         connectDuration = info.connect_duration.sec;
     }
+    
+    AVAudioSessionPortDescription *usedPort  = [[AVAudioSession sharedInstance] preferredInput];
+      
+      NSString *audioRoute = @"earpiece";
+      if(usedPort.portType == AVAudioSessionPortBluetoothHFP) {
+          audioRoute = @"bluetooth";
+      } else if(isSpeaker) {
+          audioRoute = @"speaker";
+      }
+    NSLog(@"Moises: Audio route %@", audioRoute);
 
     return @{
         @"id": @(self.id),
         @"callId": [PjSipUtil toString:&info.call_id],
         @"accountId": @(info.acc_id),
-        
+        @"audioRoute": audioRoute,
         @"localContact": [PjSipUtil toString:&info.local_contact],
         @"localUri": [PjSipUtil toString:&info.local_info],
         @"remoteContact": [PjSipUtil toString:&info.remote_contact],
