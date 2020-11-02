@@ -259,8 +259,8 @@ export default class Endpoint extends EventEmitter {
      * @param callSettings {PjSipCallSetttings} Outgoing call settings.
      * @param msgSettings {PjSipMsgData} Outgoing call additional information to be sent with outgoing SIP message.
      */
-    makeCall(account, destination, callSettings, msgData) {
-        destination = this._normalize(account, destination);
+    makeCall(account, destination, callSettings, msgData, name='') {
+        destination = this._normalize(account, destination, name);
 
         return new Promise(function(resolve, reject) {
             NativeModules.PjSipModule.makeCall(account.getId(), destination, callSettings, msgData, (successful, data) => {
@@ -795,7 +795,7 @@ export default class Endpoint extends EventEmitter {
      * @returns {string}
      * @private
      */
-    _normalize(account, destination) {
+    _normalize(account, destination, name='') {
         if (!destination.startsWith("sip:")) {
             let realm = account.getRegServer();
 
@@ -808,7 +808,9 @@ export default class Endpoint extends EventEmitter {
                 }
             }
 
-            destination = "sip:" + destination + "@" + realm;
+            destination = name ?  
+                        `"${name}" <sip:${destination}@${realm}>`
+                        : "sip:" + destination + "@" + realm;
         }
 
         return destination;
