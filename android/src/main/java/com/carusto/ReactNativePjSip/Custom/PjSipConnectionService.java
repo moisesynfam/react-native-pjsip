@@ -168,13 +168,13 @@ public class PjSipConnectionService extends ConnectionService {
 
             switch (action) {
                 case PjActions.EVENT_CALL_CHANGED:
-
+                
                     try {
                         String json = intent.getStringExtra("data");
                         JSONObject object = new JSONObject(json);
-                        if(object.getString("state").equals(pjsip_inv_state.PJSIP_INV_STATE_CALLING)){
-//                            currentConnections.get(object.getInt("id")).setActive();
-                        }
+                  if(object.getString("state").equals(String.valueOf(pjsip_inv_state.PJSIP_INV_STATE_CONFIRMED))){                        
+                        currentConnections.get(object.getInt("id")).setActive();
+                       }
 
                     } catch (JSONException e) {
                         Log.w(TAG, "Error getting json object from call data", e);
